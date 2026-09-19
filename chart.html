@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Minecraft Server Ping Tracker</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
       :root {
@@ -135,11 +135,14 @@
       // Try auto-loading from the repo's data folder (works on GitHub Pages)
       fetch(CSV_PATH)
         .then((res) => {
+          console.log(res);
+          console.log(res.ok);
           if (!res.ok) throw new Error("not found");
           return res.text();
         })
         .then(parseCsvText)
-        .catch(() => {
+        .catch((err) => {
+          console.log(err);
           document.getElementById("stats").innerHTML =
             "<p>Couldn't auto-load data/pings.csv — pick the file manually below.</p>";
         });
