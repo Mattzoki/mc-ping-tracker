@@ -1,121 +1,156 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<title>Minecraft Server Ping Tracker</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<style>
-  :root { color-scheme: light dark; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 0 1rem;
-  }
-  h1 { font-size: 1.3rem; }
-  #stats { display: flex; gap: 1.5rem; margin: 1rem 0; flex-wrap: wrap; }
-  .stat { background: rgba(127,127,127,0.1); border-radius: 8px; padding: 0.75rem 1rem; }
-  .stat .label { font-size: 0.8rem; opacity: 0.7; }
-  .stat .value { font-size: 1.4rem; font-weight: 600; }
-  #controls { margin-bottom: 1rem; }
-  input[type="file"] { font-size: 0.9rem; }
-  canvas { max-width: 100%; }
-</style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Minecraft Server Ping Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        max-width: 900px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.3rem;
+      }
+      #stats {
+        display: flex;
+        gap: 1.5rem;
+        margin: 1rem 0;
+        flex-wrap: wrap;
+      }
+      .stat {
+        background: rgba(127, 127, 127, 0.1);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+      }
+      .stat .label {
+        font-size: 0.8rem;
+        opacity: 0.7;
+      }
+      .stat .value {
+        font-size: 1.4rem;
+        font-weight: 600;
+      }
+      #controls {
+        margin-bottom: 1rem;
+      }
+      input[type="file"] {
+        font-size: 0.9rem;
+      }
+      canvas {
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Minecraft Server Ping — Today</h1>
 
-<h1>Minecraft Server Ping — Today</h1>
-
-<div id="controls">
-  <!-- If served from GitHub Pages next to data/pings.csv, it loads automatically.
+    <div id="controls">
+      <!-- If served from GitHub Pages next to data/pings.csv, it loads automatically.
        Otherwise, pick the CSV file manually. -->
-  <input type="file" id="fileInput" accept=".csv" />
-</div>
+      <input type="file" id="fileInput" accept=".csv" />
+    </div>
 
-<div id="stats"></div>
-<canvas id="pingChart" height="120"></canvas>
+    <div id="stats"></div>
+    <canvas id="pingChart" height="120"></canvas>
 
-<script>
-const CSV_PATH = "data/pings.csv"; // used when hosted alongside the data folder
+    <script>
+      const CSV_PATH = "./data/pings.csv"; // used when hosted alongside the data folder
 
-function renderChart(rows) {
-  // Keep only today's rows (UTC) that were actually online
-  const today = new Date().toISOString().slice(0, 10);
-  const points = rows
-    .filter(r => r.timestamp_utc && r.timestamp_utc.startsWith(today) && r.online === "True" || (r.online === true))
-    .map(r => ({
-      t: r.timestamp_utc,
-      ms: parseFloat(r.latency_ms)
-    }))
-    .filter(p => !Number.isNaN(p.ms));
+      function renderChart(rows) {
+        // Keep only today's rows (UTC) that were actually online
+        const today = new Date().toISOString().slice(0, 10);
+        const points = rows
+          .filter(
+            (r) =>
+              (r.timestamp_utc &&
+                r.timestamp_utc.startsWith(today) &&
+                r.online === "True") ||
+              r.online === true,
+          )
+          .map((r) => ({
+            t: r.timestamp_utc,
+            ms: parseFloat(r.latency_ms),
+          }))
+          .filter((p) => !Number.isNaN(p.ms));
 
-  if (points.length === 0) {
-    document.getElementById("stats").innerHTML = "<p>No data for today yet.</p>";
-    return;
-  }
+        if (points.length === 0) {
+          document.getElementById("stats").innerHTML =
+            "<p>No data for today yet.</p>";
+          return;
+        }
 
-  const latencies = points.map(p => p.ms);
-  const maxVal = Math.max(...latencies);
-  const minVal = Math.min(...latencies);
-  const avgVal = latencies.reduce((a, b) => a + b, 0) / latencies.length;
-  const maxPoint = points[latencies.indexOf(maxVal)];
-  const minPoint = points[latencies.indexOf(minVal)];
+        const latencies = points.map((p) => p.ms);
+        const maxVal = Math.max(...latencies);
+        const minVal = Math.min(...latencies);
+        const avgVal = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+        const maxPoint = points[latencies.indexOf(maxVal)];
+        const minPoint = points[latencies.indexOf(minVal)];
 
-  document.getElementById("stats").innerHTML = `
+        document.getElementById("stats").innerHTML = `
     <div class="stat"><div class="label">Lowest ping</div><div class="value">${minVal.toFixed(1)} ms</div><div class="label">${new Date(minPoint.t).toLocaleTimeString()}</div></div>
     <div class="stat"><div class="label">Highest ping</div><div class="value">${maxVal.toFixed(1)} ms</div><div class="label">${new Date(maxPoint.t).toLocaleTimeString()}</div></div>
     <div class="stat"><div class="label">Average</div><div class="value">${avgVal.toFixed(1)} ms</div></div>
     <div class="stat"><div class="label">Samples</div><div class="value">${points.length}</div></div>
   `;
 
-  const ctx = document.getElementById("pingChart").getContext("2d");
-  new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: points.map(p => new Date(p.t).toLocaleTimeString()),
-      datasets: [{
-        label: "Ping (ms)",
-        data: latencies,
-        borderColor: "#3b82f6",
-        backgroundColor: "rgba(59,130,246,0.15)",
-        pointRadius: 2,
-        tension: 0.2,
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { ticks: { maxTicksLimit: 12 } },
-        y: { beginAtZero: false, title: { display: true, text: "ms" } }
+        const ctx = document.getElementById("pingChart").getContext("2d");
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: points.map((p) => new Date(p.t).toLocaleTimeString()),
+            datasets: [
+              {
+                label: "Ping (ms)",
+                data: latencies,
+                borderColor: "#3b82f6",
+                backgroundColor: "rgba(59,130,246,0.15)",
+                pointRadius: 2,
+                tension: 0.2,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: { ticks: { maxTicksLimit: 12 } },
+              y: { beginAtZero: false, title: { display: true, text: "ms" } },
+            },
+          },
+        });
       }
-    }
-  });
-}
 
-function parseCsvText(text) {
-  const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
-  renderChart(parsed.data);
-}
+      function parseCsvText(text) {
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+        renderChart(parsed.data);
+      }
 
-// Try auto-loading from the repo's data folder (works on GitHub Pages)
-fetch(CSV_PATH)
-  .then(res => { if (!res.ok) throw new Error("not found"); return res.text(); })
-  .then(parseCsvText)
-  .catch(() => {
-    document.getElementById("stats").innerHTML =
-      "<p>Couldn't auto-load data/pings.csv — pick the file manually below.</p>";
-  });
+      // Try auto-loading from the repo's data folder (works on GitHub Pages)
+      fetch(CSV_PATH)
+        .then((res) => {
+          if (!res.ok) throw new Error("not found");
+          return res.text();
+        })
+        .then(parseCsvText)
+        .catch(() => {
+          document.getElementById("stats").innerHTML =
+            "<p>Couldn't auto-load data/pings.csv — pick the file manually below.</p>";
+        });
 
-document.getElementById("fileInput").addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => parseCsvText(ev.target.result);
-  reader.readAsText(file);
-});
-</script>
-
-</body>
+      document.getElementById("fileInput").addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => parseCsvText(ev.target.result);
+        reader.readAsText(file);
+      });
+    </script>
+  </body>
 </html>
